@@ -1,9 +1,9 @@
 import type { VocabularyWord } from './curriculum';
 
-// Transcribed from the two photos supplied for A2 Lesson 2.
+// Transcribed from the two photos supplied for A1 Lesson 2.
 // Level and lesson placement follow the user's request; handwritten notes are
 // not vocabulary entries. English meanings are added for practice.
-export const a2Lesson2Words: VocabularyWord[] = [
+export const a1Lesson2Words: VocabularyWord[] = [
   {word:'Mensch',article:'der',meaning:'person; human being',plural:'Menschen',category:'Lernwortschatz'},
   {word:'Studie',article:'die',meaning:'study; research study',plural:'Studien',category:'Lernwortschatz'},
   {word:'Stadt',article:'die',meaning:'city; town',plural:'Städte',category:'Lernwortschatz'},

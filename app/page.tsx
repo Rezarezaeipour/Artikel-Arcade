@@ -5,8 +5,8 @@ import WordCollection from './components/WordCollection';
 const articles = ['der', 'das', 'die'];
 import { LEVELS as levels, LESSONS_PER_LEVEL, curriculum, demoWords, getArticleWords } from './data/curriculum';
 const lessonGameVocabulary=levels.map(level=>curriculum[level].map(getArticleWords));
-type Progress = {curriculumVersion: 3; completed: number[]; best: number; reviewed: number};
-const initial: Progress = {curriculumVersion:3,completed:[],best:0,reviewed:0};
+type Progress = {curriculumVersion: 4; completed: number[]; best: number; reviewed: number};
+const initial: Progress = {curriculumVersion:4,completed:[],best:0,reviewed:0};
 const digitPixels = [
  ['01110','11011','11011','11011','11011','11011','01110'],
  ['00110','01110','00110','00110','00110','00110','11111'],
@@ -63,7 +63,7 @@ export default function Home(){
  },[round,playing,activeLesson]);
  function changeArticle(direction:number){if(!playing||paused||finished)return;setLane(l=>Math.max(0,Math.min(2,l+direction)));}
  function changeSpeed(direction:number){if(!playing||paused||finished)return;setSpeed(s=>Math.max(.5,Math.min(3,s+direction*.25)));}
- useEffect(()=>{try {const p=JSON.parse(localStorage.getItem('artikel-progress')||'null');if(p&&Array.isArray(p.completed))setProgress({...initial,...p,curriculumVersion:3,completed:p.curriculumVersion===3?p.completed:p.curriculumVersion===2?p.completed.filter((id:number)=>id!==1):[]});const saved=Number(localStorage.getItem('artikel-sector')||0);if(saved>=0&&saved<6)setLevel(saved);}catch{} setReady(true);},[]);
+ useEffect(()=>{try {const p=JSON.parse(localStorage.getItem('artikel-progress')||'null');if(p&&Array.isArray(p.completed))setProgress({...initial,...p,curriculumVersion:4,completed:p.curriculumVersion===4?p.completed:[2,3].includes(p.curriculumVersion)?Array.from(new Set(p.completed.filter((id:number)=>p.curriculumVersion!==2||id!==1).map((id:number)=>id===14?2:id))):[]});const saved=Number(localStorage.getItem('artikel-sector')||0);if(saved>=0&&saved<6)setLevel(saved);}catch{} setReady(true);},[]);
  useEffect(()=>{if(ready){try{localStorage.setItem('artikel-progress',JSON.stringify(progress));localStorage.setItem('artikel-sector',String(level));}catch{}}},[progress,level,ready]);
  function start(ep:number,demo=true){const nextWords=demo?demoWords:lessonGameVocabulary[level][ep-1];if(!nextWords.length)return;setActiveLesson(demo?null:{level,episode:ep});setWordResults(nextWords.map(()=>null));if(demo)setLevel(0);setEpisode(demo?1:ep);setRound(0);setScore(0);setLane(0);setSpeed(1);travel.current=0;starDistance.current=0;checked.current=false;setFlightPosition(0);setFeedback('');setAnswerResult(null);setFinished(false);setPaused(false);setPlaying(true);setModal(null);}
  function answer(){if(feedback||paused||finished)return;const correct=articles[lane]===words[round%words.length].article; setAnswerResult(correct?'correct':'wrong');setWordResults(results=>results.map((result,index)=>index===round?(correct?'correct':'wrong'):result)); const next=score+(correct?100:0);setScore(next);setFeedback(correct?'PERFECT ORBIT! +100':`It's ${words[round%words.length].article} ${words[round%words.length].word}`);if(sound){try{const ctx=new AudioContext();const o=ctx.createOscillator();const g=ctx.createGain();o.type='square';o.frequency.value=correct?660:160;g.gain.value=.035;o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.12);}catch{}}}

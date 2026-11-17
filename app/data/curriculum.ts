@@ -1,5 +1,5 @@
 import { a1Lesson1Words } from './a1-lesson-1';
-import { a2Lesson2Words } from './a2-lesson-2';
+import { a1Lesson2Words } from './a1-lesson-2';
 export const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 export const LESSONS_PER_LEVEL = 12;
 export type Level = typeof LEVELS[number];
@@ -90,12 +90,12 @@ curriculum.A1[0] = {
   words: a1Lesson1Words,
 };
 
-curriculum.A2[1] = {
+curriculum.A1[1] = {
   number: 2,
   title: 'Lesson 02',
   source: 'user',
-  sourceNote: 'Starten Wir! vocabulary transcribed from the two photos supplied for A2 Lesson 2. English meanings added for practice.',
-  words: a2Lesson2Words,
+  sourceNote: 'Starten Wir! vocabulary transcribed from the two photos supplied for A1 Lesson 2. English meanings added for practice.',
+  words: a1Lesson2Words,
 };
 
 export type ArticleWord = VocabularyWord & { article: Article };
