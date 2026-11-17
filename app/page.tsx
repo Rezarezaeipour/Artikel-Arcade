@@ -1,0 +1,130 @@
+'use client';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowUpRight, ArrowRight, X, Pause, Play, Trophy, Orbit, LockKeyhole, RotateCcw } from 'lucide-react';
+import WordCollection from './components/WordCollection';
+const articles = ['der', 'das', 'die'];
+import { LEVELS as levels, LESSONS_PER_LEVEL, curriculum, demoWords } from './data/curriculum';
+const titles = ['First contact','A bigger universe','Finding your orbit','Beyond the familiar','Deep space explorer','Master of the galaxy'];
+type Progress = {curriculumVersion: 2; completed: number[]; best: number; reviewed: number};
+const initial: Progress = {curriculumVersion:2,completed:[],best:0,reviewed:0};
+const digitPixels = [
+ ['01110','11011','11011','11011','11011','11011','01110'],
+ ['00110','01110','00110','00110','00110','00110','11111'],
+ ['11110','00011','00011','01110','11000','11000','11111'],
+ ['11110','00011','00011','01110','00011','00011','11110'],
+ ['11011','11011','11011','11111','00011','00011','00011'],
+ ['11111','11000','11000','11110','00011','00011','11110'],
+ ['01110','11000','11000','11110','11011','11011','01110'],
+ ['11111','00011','00110','00110','01100','01100','01100'],
+ ['01110','11011','11011','01110','11011','11011','01110'],
+ ['01110','11011','11011','01111','00011','00011','01110'],
+];
+function ArcadeScore({value, className=''}:{value:number;className?:string}){
+ const digits=String(value).padStart(4,'0');
+ return <svg className={`arcade-digits ${className}`} viewBox={`0 0 ${digits.length*6-1} 7`} preserveAspectRatio="none" role="img" aria-label={`${value} points`} shapeRendering="crispEdges">{digits.split('').flatMap((digit,index)=>digitPixels[Number(digit)].flatMap((row,y)=>row.split('').map((pixel,x)=>pixel==='1'?<rect key={`${index}-${x}-${y}`} x={index*6+x} y={y} width="1" height="1"/>:null)))}</svg>;
+}
+function Ship({small=false}:{small?:boolean}) {return <svg className={small?'ship small':'ship'} viewBox="0 0 80 100" aria-label="Pixel space shuttle"><path fill="#72e5c0" d="M35 3h10v10h8v20h8v18h10v25H54V64h-7v20H33V64h-7v12H9V51h10V33h8V13h8z"/><path fill="#d6e8dc" d="M35 13h10v12h8v27H27V25h8z"/><path fill="#172c32" d="M34 29h13v17H34z"/><path fill="#346b64" d="M27 52h26v12H27zM13 57h10v14H13zM57 57h10v14H57z"/><path className="flame" fill="#f6bb63" d="M33 84h14v9h-4v7h-6v-7h-4z"/></svg>}
+export default function Home(){
+ const [page,setPage]=useState('mission'); const [level,setLevel]=useState(0); const [modal,setModal]=useState<string|null>(null); const [progress,setProgress]=useState<Progress>(initial); const [ready,setReady]=useState(false); const [sound,setSound]=useState(false); const [episode,setEpisode]=useState(1); const [playing,setPlaying]=useState(false); const [paused,setPaused]=useState(false); const [lane,setLane]=useState(1); const [round,setRound]=useState(0); const [score,setScore]=useState(0); const [feedback,setFeedback]=useState(''); const [finished,setFinished]=useState(false);
+ const [menuIndex,setMenuIndex]=useState(0);
+ const menuWasPaused=useRef(false); const menuButtons=useRef<Array<HTMLButtonElement|null>>([]);
+ function openMenu(){menuWasPaused.current=paused;if(playing)setPaused(true);setMenuIndex(0);setModal('menu');}
+ function closeMenu(){setModal(null);if(playing)setPaused(menuWasPaused.current);}
+ const menuItems=[...(playing?[{label:'Resume flight',action:()=>{setModal(null);setPaused(false);}}]:[]),...([{id:'mission',label:'Mission control'},{id:'review',label:'Word collection'},{id:'stats',label:'Flight log'}].map(item=>({label:item.label,action:()=>{setPlaying(false);setPage(item.id);setModal(null);}}))),{label:'Settings',action:()=>setModal('settings')}];
+ useEffect(()=>{if(modal==='menu')menuButtons.current[menuIndex]?.focus();},[modal,menuIndex]);
+ const [activeLesson,setActiveLesson]=useState<{level:number;episode:number}|null>(null);
+ const words=activeLesson?curriculum[levels[activeLesson.level]][activeLesson.episode-1].words:demoWords;
+ const [answerResult,setAnswerResult]=useState<'correct'|'wrong'|null>(null);
+ const [wordResults,setWordResults]=useState<Array<'correct'|'wrong'|null>>(()=>words.map(()=>null));
+ const [speed,setSpeed]=useState(1); const [flightPosition,setFlightPosition]=useState(0);
+ const travel=useRef(0); const starDistance=useRef(0); const checked=useRef(false);
+ function changeArticle(direction:number){if(!playing||paused||finished)return;setLane(l=>Math.max(0,Math.min(2,l+direction)));}
+ function changeSpeed(direction:number){if(!playing||paused||finished)return;setSpeed(s=>Math.max(.5,Math.min(3,s+direction*.25)));}
+ useEffect(()=>{try {const p=JSON.parse(localStorage.getItem('artikel-progress')||'null');if(p&&Array.isArray(p.completed))setProgress({...initial,...p,curriculumVersion:2,completed:p.curriculumVersion===2?p.completed:[]});const saved=Number(localStorage.getItem('artikel-sector')||0);if(saved>=0&&saved<6)setLevel(saved);}catch{} setReady(true);},[]);
+ useEffect(()=>{if(ready){try{localStorage.setItem('artikel-progress',JSON.stringify(progress));localStorage.setItem('artikel-sector',String(level));}catch{}}},[progress,level,ready]);
+ function start(ep:number,demo=true){const nextWords=demo?demoWords:curriculum[levels[level]][ep-1].words;if(!nextWords.length)return;setActiveLesson(demo?null:{level,episode:ep});setWordResults(nextWords.map(()=>null));if(demo)setLevel(0);setEpisode(demo?1:ep);setRound(0);setScore(0);setLane(0);setSpeed(1);travel.current=0;starDistance.current=0;checked.current=false;setFlightPosition(0);setFeedback('');setAnswerResult(null);setFinished(false);setPaused(false);setPlaying(true);setModal(null);}
+ function answer(){if(feedback||paused||finished)return;const correct=articles[lane]===words[round%words.length].article; setAnswerResult(correct?'correct':'wrong');setWordResults(results=>results.map((result,index)=>index===round?(correct?'correct':'wrong'):result)); const next=score+(correct?100:0);setScore(next);setFeedback(correct?'PERFECT ORBIT! +100':`It's ${words[round%words.length].article} ${words[round%words.length].word}`);if(sound){try{const ctx=new AudioContext();const o=ctx.createOscillator();const g=ctx.createGain();o.type='square';o.frequency.value=correct?660:160;g.gain.value=.035;o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.12);}catch{}}}
+ // Distance, rather than a submit key, determines when a planet is checked.
+ useEffect(()=>{
+  if(!playing||paused||finished)return;
+  let frame:number; let previous:number|null=null;
+  function tick(now:number){
+   const delta=previous===null?0:Math.min(now-previous,80); previous=now;
+   travel.current+=delta*speed/9000;
+   starDistance.current+=delta*speed*.07;
+   if(travel.current>=.7&&!checked.current){checked.current=true;answer();}
+   if(travel.current>=1){
+    travel.current=0;checked.current=false;setFeedback('');setAnswerResult(null);
+    if(round===words.length-1){
+     setFinished(true);
+     setProgress(p=>({...p,completed:activeLesson?Array.from(new Set([...p.completed,activeLesson.level*LESSONS_PER_LEVEL+activeLesson.episode])):p.completed,best:Math.max(p.best,score),reviewed:p.reviewed+words.length}));
+     setFlightPosition(0);return;
+    }
+    setRound(r=>r+1);setFlightPosition(0);return;
+   }
+   setFlightPosition(travel.current);
+   frame=requestAnimationFrame(tick);
+  }
+  frame=requestAnimationFrame(tick);
+  return()=>cancelAnimationFrame(frame);
+ },[playing,paused,finished,speed,lane,round,score,sound,activeLesson,words]);
+ useEffect(()=>{function key(e:KeyboardEvent){
+  if(modal==='menu'){
+   if(e.key==='Tab'){e.preventDefault();setMenuIndex(index=>(index+(e.shiftKey?-1:1)+menuItems.length)%menuItems.length);return;}
+   if(['ArrowDown','ArrowUp','Enter','Escape'].includes(e.key)){e.preventDefault();if(e.key==='Escape')closeMenu();else if(e.key==='Enter')menuItems[menuIndex].action();else setMenuIndex(index=>(index+(e.key==='ArrowDown'?1:-1)+menuItems.length)%menuItems.length);}return;
+  }
+  if(e.key==='Escape'){if(modal)setModal(null);else openMenu();return;}
+  if(!playing||modal)return;
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
+   e.preventDefault();if(paused||finished)return;
+   if(e.key==='ArrowLeft')changeArticle(-1);
+   if(e.key==='ArrowRight')changeArticle(1);
+   if(e.key==='ArrowUp')changeSpeed(1);
+   if(e.key==='ArrowDown')changeSpeed(-1);
+  }
+ }window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);});
+ const completed=progress.completed.filter(n=>n>level*LESSONS_PER_LEVEL&&n<=level*LESSONS_PER_LEVEL+LESSONS_PER_LEVEL).length;
+ return <div className="app-shell">
+  <main>
+  {!playing&&<button className="arcade-menu-trigger" onClick={openMenu} aria-haspopup="dialog">☰ <span>MENU</span></button>}
+  {playing?<div className="game-content"><div className="flight-layout">
+   <aside className="flight-telemetry" aria-label="Flight statistics">
+    <div className="telemetry-title"><span className="eyebrow">{activeLesson?`${levels[activeLesson.level]} · LESSON ${activeLesson.episode}`:'A1 · FLIGHT DEMO'}</span><h1>Find your article.</h1><span className="telemetry-status"><i/>{finished?'MISSION COMPLETE':paused?'HOLDING ORBIT':'IN FLIGHT'}</span><div className="cockpit-actions"><button className="secondary cockpit-pause" disabled={finished} onClick={()=>setPaused(p=>!p)}>{paused?<Play size={14}/>:<Pause size={14}/>} {paused?'RESUME':'PAUSE'}</button><button className="secondary cockpit-menu" onClick={openMenu} aria-haspopup="dialog">☰ MENU</button></div></div>
+    <div className="telemetry-score"><span>1P SCORE</span><div key={score} className={`score-display ${score>0?'score-updated':''}`} aria-live="polite"><ArcadeScore value={score}/></div><div className="high-score"><span>HI-SCORE</span><ArcadeScore value={Math.max(progress.best,score)}/></div></div>
+    <div className="telemetry-stats"><div><span>FLIGHT SPEED</span><strong className="speed-readout">{speed.toFixed(2)}×</strong></div><div><span>CORRECT</span><strong>{score/100} <small>/ {finished?words.length:round+(answerResult?1:0)}</small></strong></div></div>
+    <div className="telemetry-progress"><div><span>FLIGHT PROGRESS</span><strong>{finished?words.length:round} / {words.length}</strong></div><div className="telemetry-track"><i style={{width:`${(finished?words.length:round)/words.length*100}%`}}/></div><small>{activeLesson?`${levels[activeLesson.level]} · SAMPLE VOCABULARY`:'A1 · DEMO VOCABULARY'}</small></div>
+    <div className="telemetry-controls"><h3>FLIGHT CONTROLS</h3><div><span><kbd>←</kbd> <kbd>→</kbd></span><span>Select article</span></div><div><span><kbd>↑</kbd> <kbd>↓</kbd></span><span>Adjust speed</span></div><div><kbd>Esc</kbd><span>Game menu</span></div></div>
+    <div className="telemetry-legend"><span><i className="correct-dot"/> CORRECT ANSWER</span><span><i className="wrong-dot"/> WRONG ANSWER</span></div>
+   </aside>
+   <div className="flight-screen"><div className={`flight-stage starfield ${paused||finished?'motion-paused':''}`} data-result={answerResult??undefined} style={{backgroundPosition:[1, .45, 1.6, .7, 2, 1.2].map(rate=>`0 ${starDistance.current*rate}px`).join(',')}}>
+   <div className="game-hud"><button className="flight-hud-menu" onClick={openMenu} aria-haspopup="dialog">☰ MENU</button><span>WORD {round+1} / {words.length}</span><span>{activeLesson?`${levels[activeLesson.level]} · SAMPLE`:'A1 · DEMO'}</span></div>
+   <div className={`word-planet traveling-planet ${feedback?'planet-checked':''}`} style={{top:`${10+flightPosition*86}%`,opacity:flightPosition>.86?(1-flightPosition)/.14:1}}><span style={{fontSize:words[round%words.length].word.length>18?9:words[round%words.length].word.length>12?12:undefined}}>{words[round%words.length].word}</span><small>{words[round%words.length].meaning}</small></div>
+   <div className="centered-shuttle"><Ship/></div>
+   <div className="article-selector" role="group" aria-label="Selected article — use left and right arrows">{articles.map((article,i)=><span key={article} className={i===lane?'selected':''} aria-current={i===lane?'true':undefined}>{article[0].toUpperCase()+article.slice(1)}</span>)}</div>
+   <div className="feedback" aria-live="polite">{feedback||'← → SELECT ARTICLE · ↑ FASTER · ↓ SLOWER'}</div>{paused&&!finished&&<div className="game-overlay"><div className="eyebrow">HOLDING ORBIT</div><h2>Take a breath, pilot.</h2><button className="primary" onClick={()=>setPaused(false)}>RESUME FLIGHT <Play size={15}/></button><button className="text-btn" onClick={()=>setPlaying(false)}>Return to mission control</button></div>}{finished&&<div className="game-overlay"><Trophy size={36}/><div className="eyebrow">MISSION COMPLETE</div><h2>A stellar start.</h2><ArcadeScore value={score} className="completion-score"/><p>{words.length} words explored</p><button className="primary" onClick={()=>start(episode,!activeLesson)}>PLAY AGAIN <RotateCcw size={16}/></button><button className="text-btn" onClick={()=>setPlaying(false)}>Return to mission control</button></div>}</div><div className="touch-controls"><button aria-label="Previous article" disabled={paused||finished} onClick={()=>changeArticle(-1)}>←</button><button aria-label="Speed up" disabled={paused||finished||speed>=3} onClick={()=>changeSpeed(1)}>↑</button><button aria-label="Slow down" disabled={paused||finished||speed<=.5} onClick={()=>changeSpeed(-1)}>↓</button><button aria-label="Next article" disabled={paused||finished} onClick={()=>changeArticle(1)}>→</button></div></div>
+   <aside className="flight-word-list" aria-label="Episode word results">
+    <div className="word-list-heading"><span className="eyebrow">{activeLesson?'SAMPLE VOCABULARY':'DEMO VOCABULARY'}</span><h2>Word radar <span>{wordResults.filter(Boolean).length} / {words.length}</span></h2><p>Articles appear as words pass.</p></div>
+    <ol>{words.map((word,index)=>{
+     const result=wordResults[index];
+     return <li key={word.word} className={`radar-word ${result??'pending'} ${index===round&&!finished?'current-word':''}`} aria-current={index===round&&!finished?'step':undefined}>
+      <span className="radar-number">{String(index+1).padStart(2,'0')}</span>
+      <div><div className="radar-noun"><span className="radar-article">{result?word.article:'–'}</span> {word.word}</div><small>{word.meaning}</small></div>
+      <span className="radar-result" aria-label={result==='correct'?'Correct answer':result==='wrong'?'Wrong answer':'Not answered'}>{result==='correct'?'✓':result==='wrong'?'×':'·'}</span>
+     </li>;
+    })}</ol>
+    <p className="word-list-note">{finished?'All words explored. Ready for another flight?':'Choose an article before the planet reaches your shuttle.'}</p>
+   </aside>
+   </div></div>:<div className="content">
+   <div className="section-heading"><div><div className="eyebrow">A LITTLE PRACTICE. A WHOLE NEW UNIVERSE.</div><h1>{page==='review'?'Your word collection.':page==='stats'?'Your flight log.':'Ready for liftoff, cadet?'}</h1><p>{page==='review'?'Browse and practice vocabulary from every level and lesson.':page==='stats'?'Small flights. Real progress. All stored on this device.':'Master der, die, and das. One small space adventure at a time.'}</p></div><button className="how-button" onClick={()=>setModal('how')}><span>?</span> How to play <ArrowUpRight size={15}/></button></div>
+   {page==='review'?<WordCollection/>:page==='stats'?<><div className="stat-grid">{[['EPISODES COMPLETE',progress.completed.length],['WORDS PRACTICED',progress.reviewed],['PERSONAL BEST',progress.best]].map(([l,v])=><div className="stat-card" key={l}><span>{l}</span><strong>{v}</strong><small>YOUR EXPLORATION, SO FAR</small></div>)}</div><div className="empty-log"><Orbit size={40}/><h2>Every orbit counts.</h2><p>Your next adventure is one arrow away.</p><button className="primary" onClick={()=>start(1)}>START A FLIGHT <ArrowRight size={16}/></button></div></>:<>
+   {page==='mission'&&<section className="hero starfield"><div className="hero-copy"><div className="mission-tag"><i/> PRACTICE FLIGHT · A1 DEMO</div><h2>Small words.<br/>Big <span>universe.</span></h2><p>Three articles. Countless worlds to discover.<br/>Get in your shuttle. Let your instincts take flight.</p><button className="primary" onClick={()=>start(1)}>{completed?'CONTINUE MISSION':'START YOUR JOURNEY'} <ArrowRight size={17}/></button><div className="hero-meta"><span>A1 · FLIGHT DEMO</span><b>·</b><span>~ 3 MIN FLIGHT</span></div></div><div className="space-art" aria-hidden="true"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="pixel-planet"><div className="planet-shade"/></div><span className="planet-label label-der">DER</span><span className="planet-label label-die">DIE</span><span className="planet-label label-das">DAS</span><div className="hero-ship"><Ship/><div className="exhaust"/></div><span className="space-cross cross-one">✦</span><span className="space-cross cross-two">+</span><span className="coordinate">SECTOR 01 — THE BEGINNING<br/>52° 31′ N / 13° 24′ E</span></div><div className="hero-bottom"><span><i/> SYSTEMS READY</span><span>THE GALAXY SPEAKS GERMAN. SO WILL YOU.</span><span>01 / 06</span></div></section>}
+   <section className="sector-section"><div className="sub-heading"><h2>Select your sector <span>06 LEVELS</span></h2><span>FROM FIRST WORDS TO FARAWAY WORLDS</span></div><div className="level-grid">{levels.map((l,i)=><button key={l} onClick={()=>setLevel(i)} className={`level-card ${level===i?'chosen':''}`}><div className="level-top"><span>SECTOR 0{i+1}</span>{level===i?<span className="selected-dot"/>:<Orbit size={13}/>}</div><div className={`mini-planet planet-${i}`}/><strong>{l}</strong><span className="level-name">{['The beginning','New horizons','Into orbit','Deep space','The unknown','Infinity'][i]}</span><div className="level-footer"><span>{progress.completed.filter(n=>n>i*LESSONS_PER_LEVEL&&n<=i*LESSONS_PER_LEVEL+LESSONS_PER_LEVEL).length} / 12</span><span>{level===i?'SELECTED':'EXPLORE'} {level===i?'':'↗'}</span></div></button>)}</div></section>
+   <section className="episodes"><div className="sub-heading"><h2><span className="sector-badge">{levels[level]}</span> Starten Wir! <span>12 LESSONS · 12 EPISODES</span></h2><span>{completed} OF 12 COMPLETE</span></div><p className="curriculum-note">One lesson, one episode. Each episode uses its own lesson word list.</p><div className="episode-row">{curriculum[levels[level]].map(lesson=><button key={lesson.number} className="episode" onClick={()=>{setEpisode(lesson.number);setModal('episode')}}><span className="episode-number">{String(lesson.number).padStart(2,'0')}</span><div><strong>{lesson.title}</strong><span>{lesson.words.length?`${lesson.words.length} WORDS${lesson.source==='sample'?' · SAMPLE':''}`:'AWAITING WORD LIST'}</span></div>{lesson.words.length?<Play size={13}/>:<LockKeyhole size={13}/>}</button>)}</div><button className="all-episodes" onClick={()=>setModal('all')}>VIEW ALL 12 EPISODES <ArrowRight size={14}/></button></section>
+
+   </>}
+   <footer><span>BUILT FOR CURIOUS MINDS. INSPIRED BY THE ARCADE.</span><span><i/> NO ACCOUNTS. JUST ADVENTURES.</span><span>GUTEN FLUG! ✧</span></footer>
+  </div>}
+  </main>
+  {modal&&<div className="modal-backdrop" onClick={()=>modal==='menu'?closeMenu():setModal(null)}><section className={`modal ${modal==='all'?'wide':''}`} role="dialog" aria-modal="true" aria-label={modal==='menu'?'Arcade menu':modal==='how'?'Flight manual':modal==='settings'?'Settings':'Episode selection'} onClick={e=>e.stopPropagation()}><button className="close-modal icon-btn" aria-label="Close dialog" onClick={()=>modal==='menu'?closeMenu():setModal(null)}><X size={20}/></button><div className="eyebrow">ARTIKEL ARCADE / FLIGHT DECK</div>{modal==='menu'?<><div className="arcade-menu-logo">ARTIKEL<br/><span>ARCADE</span></div><p className="arcade-menu-caption">{playing?'FLIGHT PAUSED · SELECT AN OPTION':'SELECT YOUR NEXT ADVENTURE'}</p><nav className="arcade-menu-options" aria-label="Game pages">{menuItems.map((item,index)=><button key={item.label} ref={element=>{menuButtons.current[index]=element;}} className={index===menuIndex?'selected':''} onFocus={()=>setMenuIndex(index)} onClick={item.action}><span className="menu-cursor">▶</span>{item.label}<small>{String(index+1).padStart(2,'0')}</small></button>)}</nav><p className="arcade-menu-hint">↑ ↓ SELECT · ENTER CONFIRM · ESC CLOSE</p></>:modal==='how'?<><h2>Your flight manual.</h2><p>Word planets fly toward your shuttle. Select the correct article before each planet passes you; your answer is checked automatically.</p><div className="instruction"><kbd>←</kbd><kbd>→</kbd><span>Select Der, Das, or Die beneath your shuttle.</span></div><div className="instruction"><kbd>↑</kbd><span>Speed up your flight (up to 3×).</span></div><div className="instruction"><kbd>↓</kbd><span>Slow down your flight (down to 0.5×).</span></div><p className="muted">Press Esc to open the game menu, or use the Pause button to pause. The separate demo includes eight sample A1 words; these are not book lesson content. More episode vocabulary and Leitner scheduling come next.</p><button className="primary" onClick={()=>start(1)}>LET'S FLY <ArrowRight size={16}/></button></>:modal==='settings'?<><h2>Cockpit settings.</h2><div className="setting-row"><span>Arcade sound effects</span><button className="secondary" onClick={()=>setSound(!sound)}>{sound?'ON':'OFF'}</button></div><p>Progress is stored in this browser with localStorage. No account required.</p><button className="danger" onClick={()=>setModal('reset')}><RotateCcw size={15}/> Reset flight progress</button></>:modal==='reset'?<><h2>A fresh launch?</h2><p>This clears your completed episodes and scores on this device.</p><button className="danger" onClick={()=>{setProgress(initial);setModal(null)}}>RESET MY PROGRESS</button></>:modal==='all'?<><h2>{levels[level]} · Episode directory</h2><p>Each episode matches one Starten Wir! lesson. Send its word list to populate it; word counts can vary by lesson.</p><div className="all-grid">{Array.from({length:LESSONS_PER_LEVEL},(_,i)=><button key={i} onClick={()=>{setEpisode(i+1);setModal('episode')}} className={curriculum[levels[level]][i].words.length?'available':''}>{String(i+1).padStart(2,'0')} {curriculum[levels[level]][i].words.length?<Play size={11}/>:<LockKeyhole size={11}/>}</button>)}</div></>:<><div className="episode-modal-icon"><Ship small/></div><h2>{levels[level]} · Episode {String(episode).padStart(2,'0')}</h2><p>Starten Wir! · Lesson {String(episode).padStart(2,'0')}. {curriculum[levels[level]][episode-1].words.length?'This lesson contains five illustrative sample words for testing. They are not from the book.':'This episode is waiting for your lesson vocabulary. The number of words will follow the list you send.'}</p><div className="mission-summary"><span>{curriculum[levels[level]][episode-1].words.length?`${curriculum[levels[level]][episode-1].words.length} SAMPLE WORDS`:'WORD LIST PENDING'}</span><span>DER / DAS / DIE</span><span>ARROW CONTROLS</span></div><button className="primary" onClick={()=>curriculum[levels[level]][episode-1].words.length?start(episode,false):start(1)}>{curriculum[levels[level]][episode-1].words.length?'LAUNCH SAMPLE LESSON':'LAUNCH A1 DEMO'} <ArrowRight size={16}/></button></>}</section></div>}
+ </div>
+}
