@@ -16,11 +16,17 @@ Open http://localhost:3000. Use `npm run build` for a static export in `out/`.
 - Responsive dark arcade cockpit, pixel shuttle and CSS planet artwork
 - Mission control, six CEFR sectors, word collection and flight log
 - 12 lesson-based episode slots per sector, episode preview, flight manual, settings, pause and completion dialogs
-- Playable eight-word A1 demo: shuttle stays centered above Der | Das | Die; left/right select the article, up/down adjust speed (0.5×–3×), Esc pauses. Word planets automatically check the selected article as they pass. Planet and starfield movement follow the selected speed.
+- Playable eight-word A1 demo: shuttle stays centered above Der | Das | Die; left/right select the article, up/down adjust speed (0.5×–3×), Esc opens the game menu and pauses the flight. Word planets automatically check the selected article as they pass. Planet and starfield movement follow the selected speed.
 - Optional synthesized arcade effects and browser-local progress
 
 This is the interface prototype. Additional episodes and level-specific vocabulary are placeholders. Full Leitner scheduling is not yet implemented. Progress stays in this browser's localStorage and can be reset in Settings.
 
 ## Lesson content
 
-`app/data/curriculum.ts` defines 12 lessons for each CEFR level. Populate each lesson with the user-supplied Starten Wir! vocabulary; lesson word counts may vary. The eight sample words are a separate demo and do not count toward course completion. No book lesson word lists have been supplied yet. Lesson 1 of each level includes five explicitly labeled sample words for testing; these are illustrative, not verified textbook vocabulary or CEFR assignments. Sample lessons are playable and appear in Word collection.
+`app/data/curriculum.ts` defines 12 lessons per CEFR level. Lesson word counts may vary.
+
+A1 Lesson 1 now uses the two user-supplied vocabulary photos, transcribed in `app/data/a1-lesson-1.ts`: 96 entries, including 25 nouns with printed articles. The game and article practice use those 25 nouns; Browse words includes all entries, verb forms, plural forms, phrases, countries, languages, and numbers. English meanings were added for practice. Unmarked titles such as Frau and Herr retain no article rather than adding one not printed in the source.
+
+A2 Lesson 2 uses the next two user-supplied vocabulary photos, transcribed in `app/data/a2-lesson-2.ts`: 93 entries, including 38 nouns with printed articles and 22 number entries. Browse words includes every entry; the game and article practice use the 38 nouns. The explicitly plural nouns Eltern, Geschwister, and Großeltern retain `die` and are labeled as plural nouns. English meanings were added for practice. A2 Lesson 1 remains a separate sample lesson.
+
+Lesson 1 in A2–C2 still contains five labeled sample words per level; these are illustrative, not verified textbook vocabulary or CEFR assignments. The separate eight-word demo remains available. Prior completion of the A1 sample does not mark the replacement book lesson complete.

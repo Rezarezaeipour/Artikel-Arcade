@@ -1,15 +1,23 @@
+import { a1Lesson1Words } from './a1-lesson-1';
+import { a2Lesson2Words } from './a2-lesson-2';
 export const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 export const LESSONS_PER_LEVEL = 12;
 export type Level = typeof LEVELS[number];
+export type Article = 'der' | 'das' | 'die';
 export type VocabularyWord = {
   word: string;
-  article: 'der' | 'das' | 'die';
+  article: Article | null;
   meaning: string;
+  category?: string;
+  partOfSpeech?: string;
+  forms?: string[];
+  plural?: string;
 };
 export type Lesson = {
   number: number;
   title: string;
   source?: 'user' | 'sample';
+  sourceNote?: string;
   // Populate from the user's supplied lesson lists, preserving their source.
   words: VocabularyWord[];
 };
@@ -74,8 +82,29 @@ for (const level of LEVELS) {
   curriculum[level][0] = { number: 1, title: 'Lesson 01 · Sample', source: 'sample', words: sampleWords[level] };
 }
 
+curriculum.A1[0] = {
+  number: 1,
+  title: 'Lesson 01',
+  source: 'user',
+  sourceNote: 'Starten Wir! vocabulary transcribed from the two photos supplied for A1 Lesson 1. English meanings added for practice.',
+  words: a1Lesson1Words,
+};
+
+curriculum.A2[1] = {
+  number: 2,
+  title: 'Lesson 02',
+  source: 'user',
+  sourceNote: 'Starten Wir! vocabulary transcribed from the two photos supplied for A2 Lesson 2. English meanings added for practice.',
+  words: a2Lesson2Words,
+};
+
+export type ArticleWord = VocabularyWord & { article: Article };
+export function getArticleWords(lesson: Lesson): ArticleWord[] {
+  return lesson.words.filter((word): word is ArticleWord => word.article !== null);
+}
+
 // Interface demo only: these words have not been sourced from Starten Wir!.
-export const demoWords: VocabularyWord[] = [
+export const demoWords: ArticleWord[] = [
   {word:'Sonne',article:'die',meaning:'sun'},
   {word:'Mond',article:'der',meaning:'moon'},
   {word:'Haus',article:'das',meaning:'house'},

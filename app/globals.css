@@ -273,3 +273,20 @@ main{margin-left:0;min-height:100dvh}
 @media(max-width:700px){.content{padding:70px 18px 0}.arcade-menu-trigger{top:16px;right:18px}.game-content{height:auto;min-height:100dvh;padding:8px}.flight-layout{--flight-height:calc(100svh - 16px);grid-template-columns:minmax(0,480px);gap:10px}.flight-screen{grid-row:1}.flight-telemetry{grid-row:2}.flight-word-list{grid-row:3}.flight-screen .flight-stage{min-height:480px}.telemetry-title .cockpit-actions{grid-column:2;grid-row:1/4;flex-direction:column;margin:0}.telemetry-title .cockpit-pause{grid-column:auto;grid-row:auto}.arcade-menu-logo{font-size:30px}}
 .flight-hud-menu{display:none}
 @media(max-width:700px){.flight-hud-menu{display:block;background:#1c2b1a;border:1px solid #698352;color:var(--mint);font:700 8px var(--mono);padding:7px 9px}.flight-screen .game-hud{align-items:center;gap:8px}}
+.vocabulary-kind{display:inline-block;font:8px var(--mono);color:#b4c4a4;border:1px solid #3c4e32;padding:5px 7px;margin:2px 0 8px}
+.collection .word-card .vocabulary-details{font-size:10px;color:#9bac8f;line-height:1.7;margin:8px 0}
+.collection .word-card .vocabulary-category{font:7px/1.8 var(--mono);color:#798e69;margin-top:16px;overflow-wrap:anywhere}
+.mission-summary{flex-wrap:wrap;gap:12px;font-size:6px}
+
+/* Lower the shuttle; keep the word radar independently scrollable. */
+.centered-shuttle{top:74%}
+.flight-word-list{display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.word-list-heading,.flight-word-list .word-list-note{flex-shrink:0}
+.flight-word-list ol{position:relative;flex:1;min-height:0;overflow-y:scroll;overscroll-behavior:contain;scrollbar-width:auto;scrollbar-color:#708e59 #172016;scroll-padding-block:12px;margin:14px 0 10px;padding-right:9px;touch-action:pan-y}
+.flight-word-list ol:focus-visible{outline:1px solid var(--mint);outline-offset:3px}
+.flight-word-list ol::-webkit-scrollbar{width:7px}
+.flight-word-list ol::-webkit-scrollbar-track{background:#172016}
+.flight-word-list ol::-webkit-scrollbar-thumb{background:#708e59;border:1px solid #172016;border-radius:4px}
+.flight-word-list .word-list-note{padding-top:12px}
+@media(pointer:coarse),(max-width:700px){.centered-shuttle{top:min(74%,calc(100% - 180px))}}
+@media(max-width:700px){.flight-word-list{height:430px;max-height:430px}}
