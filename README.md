@@ -1,34 +1,95 @@
 # Artikel Arcade
 
-A frontend-only German article learning game, built with Next.js, React and TypeScript.
+An open-source, AI-native German learning game inspired by 1980s arcades. Practice der, die, and das while a shuttle travels through a pixel-art universe.
 
-## Run
+![Artikel Arcade social preview](public/github-social-preview.jpg)
+
+The vocabulary comes from German learning materials, including supplied Starten Wir! lesson lists. The application uses Next.js, React, and TypeScript, with progress stored locally in the browser.
+
+## Play
+
+Choose a level and lesson in Mission control. Each word planet approaches the shuttle, and the game checks the selected article as the planet passes it.
+
+- **← / →** selects Der, Das, or Die beneath the shuttle.
+- **↑ / ↓** adjusts flight speed from 0.5× to 3×.
+- **Esc** opens the game menu and pauses the flight.
+- **Pause / Resume** controls the flight directly.
+- **Main page** returns to Mission control.
+
+Correct answers award 100 points and show green feedback. Incorrect answers show red feedback and reveal the correct article. The word radar follows the current word and supports manual scrolling. Touch controls are available on smaller screens and touch devices.
+
+The game menu provides access to Mission control, Word collection, Flight log, Settings, and the GitHub repository. Word collection supports level and lesson filters, search, vocabulary browsing, and article practice.
+
+## Run locally
+
+Use Node.js 20 or later and npm.
 
 ```sh
-npm install
+git clone https://github.com/Rezarezaeipour/German-game.git
+cd German-game
+npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. Use `npm run build` for a static export in `out/`.
+Open http://localhost:3000. For a production build, stop the development server and run the following commands sequentially.
 
-## Included
+```sh
+npx tsc --noEmit
+npm run build
+```
 
-- Responsive dark arcade cockpit, pixel shuttle and CSS planet artwork
-- Mission control, six CEFR sectors, word collection and flight log
-- 12 lesson-based episode slots per sector, episode preview, flight manual, settings, pause and completion dialogs
-- Playable eight-word A1 demo: shuttle stays centered above Der | Das | Die; left/right select the article, up/down adjust speed (0.5×–3×), Esc opens the game menu and pauses the flight. Word planets automatically check the selected article as they pass. Planet and starfield movement follow the selected speed.
-- Optional synthesized arcade effects and browser-local progress
+The build exports a static site to `out/`. Deploy that directory to static hosting. To preview the exported site locally with Python 3 installed, run the following command.
 
-All 12 A1 episodes are populated from supplied lesson photos. Vocabulary for the remaining levels is awaiting lesson lists, with sample Lesson 1 content available for testing. Full Leitner scheduling is not yet implemented. Progress stays in this browser's localStorage and can be reset in Settings.
+```sh
+python3 -m http.server 3000 --directory out
+```
 
-## Lesson content
+## Technologies
 
-`app/data/curriculum.ts` defines 12 lessons per CEFR level. Lesson word counts may vary.
+- Next.js 15 with App Router and static export.
+- React 19 and TypeScript for the interface and game state.
+- CSS for the blue-and-yellow arcade design, pixel planets, starfield, and animation.
+- Lucide React for interface icons.
+- Browser APIs for animation, optional sound effects, and localStorage persistence.
 
-A1 Lesson 1 now uses the two user-supplied vocabulary photos, transcribed in `app/data/a1-lesson-1.ts`: 96 entries, including 25 nouns with printed articles. The game and article practice use those 25 nouns; Browse words includes all entries, verb forms, plural forms, phrases, countries, languages, and numbers. English meanings were added for practice. Unmarked titles such as Frau and Herr retain no article rather than adding one not printed in the source.
+## Vocabulary and levels
 
-A1 Lesson 2 uses the next two user-supplied vocabulary photos, transcribed in `app/data/a1-lesson-2.ts`: 93 entries, including 38 nouns with printed articles and 22 number entries. Browse words includes every entry; the game and article practice use the 38 nouns. The explicitly plural nouns Eltern, Geschwister, and Großeltern retain `die` and are labeled as plural nouns. English meanings were added for practice. A2 Lesson 1 remains a separate sample lesson.
+Each level from A1 to C2 has 12 episode slots, with one episode per lesson.
 
-Lesson 1 in A2–C2 still contains five labeled sample words per level; these are illustrative, not verified textbook vocabulary or CEFR assignments. The separate eight-word demo remains available. Prior completion of the A1 sample does not mark the replacement book lesson complete.
+- **A1** has all 12 lessons populated from supplied vocabulary photos, with 1,076 entries and 534 entries with printed articles.
+- **A2–C2** each have five illustrative sample words in Lesson 1. Further lesson lists can be contributed.
+- A separate eight-word demo is also available.
 
-A1 Lessons 3–12 are transcribed in their corresponding `app/data/a1-lesson-*.ts` files. Across all 12 A1 lessons, the library contains 1,076 vocabulary entries, including 534 entries with printed articles for the game and article practice. Printed verb forms and plural forms are retained, line-break hyphens are normalized, and English meanings are added for practice.
+Browse words includes nouns, verbs, phrases, numbers, and other lesson vocabulary. The game and article practice use entries with articles. Entries preserve printed forms and plurals, with English meanings added for practice. Counts reflect lesson entries, including words repeated in different lessons.
+
+Progress is saved on the current browser and device. Settings provides a progress reset. The project is inspired by the Leitner system, and spaced-repetition scheduling remains planned work.
+
+## Project structure
+
+```text
+app/
+  page.tsx                   Game, menus, scoring, and persistence
+  layout.tsx                 Root layout and metadata
+  globals.css                Responsive arcade styling
+  components/
+    WordCollection.tsx       Vocabulary browsing and article practice
+  data/
+    curriculum.ts            Levels, lesson registration, and vocabulary types
+    vocabulary-builders.ts   Helpers for words and categories
+    a1-lesson-*.ts            A1 lesson vocabulary
+public/                      Static images and social preview
+```
+
+## Contribute
+
+Contribute vocabulary, translations, accessibility improvements, gameplay changes, documentation, or bug fixes. The contributor guide covers setup, lesson registration, verification, and pull requests. Coding agents can read the repository instructions and use the task prompt provided in the guide. [Contributor guide](CONTRIBUTING.md) · [Agent instructions](AGENTS.md)
+
+## Authors and contributors
+
+- Reza Rezaeipour — author and maintainer.
+
+Contributors are welcome through GitHub issues and pull requests. [Repository](https://github.com/Rezarezaeipour/German-game) · [Creator website](https://rezarezaeipour.com)
+
+## License status
+
+License selection is pending. This checkout currently has no `LICENSE` file.
