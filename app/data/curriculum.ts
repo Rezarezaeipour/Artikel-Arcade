@@ -1,5 +1,15 @@
 import { a1Lesson1Words } from './a1-lesson-1';
 import { a1Lesson2Words } from './a1-lesson-2';
+import { a1Lesson3Words } from './a1-lesson-3';
+import { a1Lesson4Words } from './a1-lesson-4';
+import { a1Lesson5Words } from './a1-lesson-5';
+import { a1Lesson6Words } from './a1-lesson-6';
+import { a1Lesson7Words } from './a1-lesson-7';
+import { a1Lesson8Words } from './a1-lesson-8';
+import { a1Lesson9Words } from './a1-lesson-9';
+import { a1Lesson10Words } from './a1-lesson-10';
+import { a1Lesson11Words } from './a1-lesson-11';
+import { a1Lesson12Words } from './a1-lesson-12';
 export const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 export const LESSONS_PER_LEVEL = 12;
 export type Level = typeof LEVELS[number];
@@ -97,6 +107,30 @@ curriculum.A1[1] = {
   sourceNote: 'Starten Wir! vocabulary transcribed from the two photos supplied for A1 Lesson 2. English meanings added for practice.',
   words: a1Lesson2Words,
 };
+
+const additionalA1Lessons = [
+  a1Lesson3Words,
+  a1Lesson4Words,
+  a1Lesson5Words,
+  a1Lesson6Words,
+  a1Lesson7Words,
+  a1Lesson8Words,
+  a1Lesson9Words,
+  a1Lesson10Words,
+  a1Lesson11Words,
+  a1Lesson12Words,
+];
+
+additionalA1Lessons.forEach((words, index) => {
+  const number = index + 3;
+  curriculum.A1[number - 1] = {
+    number,
+    title: `Lesson ${String(number).padStart(2, '0')}`,
+    source: 'user',
+    sourceNote: `Starten Wir! printed vocabulary from the supplied A1 Lesson ${number} photos. English meanings added for practice.`,
+    words,
+  };
+});
 
 export type ArticleWord = VocabularyWord & { article: Article };
 export function getArticleWords(lesson: Lesson): ArticleWord[] {
