@@ -4,7 +4,7 @@ Contributions are welcome in gameplay, accessibility, vocabulary, translations, 
 
 ## Set up the project
 
-Use Node.js 20 or later and npm. Clone the repository and install its locked dependencies.
+Use Node.js 22 or later and npm. Clone the repository and install its locked dependencies.
 
 ```sh
 git clone https://github.com/Rezarezaeipour/German-game.git
@@ -20,11 +20,13 @@ npx tsc --noEmit
 npm run build
 ```
 
-The static site is generated in `out/`. To preview that output locally with Python 3 installed, run the following command.
+The application requires a server-enabled Next.js deployment. Preview the production build locally with the following command.
 
 ```sh
-python3 -m http.server 3000 --directory out
+npm start
 ```
+
+Phone controllers require `ABLY_API_KEY` in `.env.local` during development and in the hosting environment for production. Follow the setup and learning guide. [Phone controller guide](docs/phone-controller.md) · [Controller contributor reference](docs/controller-contributing.md)
 
 ## Work with a coding agent
 

@@ -22,7 +22,7 @@ The game menu provides access to Mission control, Word collection, Flight log, S
 
 ## Run locally
 
-Use Node.js 20 or later and npm.
+Use Node.js 22 or later and npm.
 
 ```sh
 git clone https://github.com/Rezarezaeipour/German-game.git
@@ -38,19 +38,25 @@ npx tsc --noEmit
 npm run build
 ```
 
-The build exports a static site to `out/`. Deploy that directory to static hosting. To preview the exported site locally with Python 3 installed, run the following command.
+The application requires a server-enabled Next.js deployment. Preview the production build locally with the following command.
 
 ```sh
-python3 -m http.server 3000 --directory out
+npm start
 ```
+
+Phone controllers require `ABLY_API_KEY` in `.env.local` during development and in the hosting environment for production. Follow the setup and learning guide. [Phone controller guide](docs/phone-controller.md) · [Controller contributor reference](docs/controller-contributing.md)
 
 ## Technologies
 
-- Next.js 15 with App Router and static export.
+- Next.js 15 with App Router and server-side pairing routes.
 - React 19 and TypeScript for the interface and game state.
 - CSS for the blue-and-yellow arcade design, pixel planets, starfield, and animation.
 - Lucide React for interface icons.
 - Browser APIs for animation, optional sound effects, and localStorage persistence.
+
+## Phone controller
+
+During a flight, select Connect phone and scan the QR code. The phone displays large arrow buttons across two rows. Pairing is anonymous and expires after 30 minutes. A disconnected controller pauses the game. Ably carries realtime commands, and the server issues restricted permissions. Game progress stays in localStorage.
 
 ## Vocabulary and levels
 
