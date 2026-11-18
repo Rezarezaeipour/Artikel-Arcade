@@ -1,6 +1,9 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, ArrowRight, House, X, Pause, Play, Trophy, Orbit, LockKeyhole, RotateCcw } from 'lucide-react';
+import { ArrowUpRight, ArrowRight, House, Smartphone, X, Pause, Play, Trophy, Orbit, LockKeyhole, RotateCcw } from 'lucide-react';
+import PhonePairing from './components/PhonePairing';
+import JoystickPrompt from './components/JoystickPrompt';
+import { usePhoneController } from './hooks/usePhoneController';
 import WordCollection from './components/WordCollection';
 const repositoryUrl='https://github.com/Rezarezaeipour/German-game';
 const authors=['Reza Rezaeipour'];
@@ -28,9 +31,10 @@ function ArcadeScore({value, className=''}:{value:number;className?:string}){
 function Ship({small=false}:{small?:boolean}) {return <svg className={small?'ship small':'ship'} viewBox="0 0 80 100" aria-label="Pixel space shuttle"><path fill="#6aaeff" d="M35 3h10v10h8v20h8v18h10v25H54V64h-7v20H33V64h-7v12H9V51h10V33h8V13h8z"/><path fill="#e1eeff" d="M35 13h10v12h8v27H27V25h8z"/><path fill="#112448" d="M34 29h13v17H34z"/><path fill="#365fa2" d="M27 52h26v12H27zM13 57h10v14H13zM57 57h10v14H57z"/><path className="flame" fill="#ffda57" d="M33 84h14v9h-4v7h-6v-7h-4z"/></svg>}
 export default function Home(){
  const [page,setPage]=useState('mission'); const [level,setLevel]=useState(0); const [modal,setModal]=useState<string|null>(null); const [progress,setProgress]=useState<Progress>(initial); const [ready,setReady]=useState(false); const [sound,setSound]=useState(false); const [episode,setEpisode]=useState(1); const [playing,setPlaying]=useState(false); const [paused,setPaused]=useState(false); const [lane,setLane]=useState(1); const [round,setRound]=useState(0); const [score,setScore]=useState(0); const [feedback,setFeedback]=useState(''); const [finished,setFinished]=useState(false);
+ const [pairingOpen, setPairingOpen] = useState(false);
  const [menuIndex,setMenuIndex]=useState(0);
  const menuWasPaused=useRef(false); const menuButtons=useRef<Array<HTMLButtonElement|HTMLAnchorElement|null>>([]);
- function returnToMain(){setPlaying(false);setPaused(false);setModal(null);setPage('mission');}
+ function returnToMain(){setPairingOpen(false);setPlaying(false);setPaused(false);setModal(null);setPage('mission');}
  function openMenu(){menuWasPaused.current=paused;if(playing)setPaused(true);setMenuIndex(0);setModal('menu');}
  function closeMenu(){setModal(null);if(playing)setPaused(menuWasPaused.current);}
  const menuItems:Array<{label:string;action:()=>void;href?:string}>=[...(playing?[{label:'Resume flight',action:()=>{setModal(null);setPaused(false);}}]:[]),...([{id:'mission',label:'Mission control'},{id:'review',label:'Word collection'},{id:'stats',label:'Flight log'}].map(item=>({label:item.label,action:()=>{setPlaying(false);setPage(item.id);setModal(null);}}))),{label:'Settings',action:()=>setModal('settings')},{label:'GitHub repository',href:repositoryUrl,action:()=>menuButtons.current[menuIndex]?.click()}];
@@ -66,11 +70,41 @@ export default function Home(){
  },[round,playing,activeLesson]);
  function changeArticle(direction:number){if(!playing||paused||finished)return;setLane(l=>Math.max(0,Math.min(2,l+direction)));}
  function changeSpeed(direction:number){if(!playing||paused||finished)return;setSpeed(s=>Math.max(.5,Math.min(3,s+direction*.25)));}
+ const phone = usePhoneController({
+  enabled: playing,
+  selectedArticle: articles[lane] as 'der' | 'das' | 'die',
+  ready: playing && !paused && !finished && !modal && !pairingOpen,
+  onCommand(direction) {
+   if (['der', 'das', 'die'].includes(direction)) setLane(['der', 'das', 'die'].indexOf(direction));
+   if (direction === 'left') changeArticle(-1);
+   if (direction === 'right') changeArticle(1);
+   if (direction === 'up') changeSpeed(1);
+   if (direction === 'down') changeSpeed(-1);
+  },
+  onPaired() {
+   setPairingOpen(false);
+   setPaused(false);
+  },
+  onDisconnect() {
+   setPaused(true);
+  },
+ });
+ function openPhonePairing() {
+  setPaused(true);
+  setModal(null);
+  setPairingOpen(true);
+  if (phone.status !== 'connecting' && phone.status !== 'waiting') void phone.connect();
+ }
+ function disconnectPhone() {
+  phone.disconnect();
+  setPairingOpen(false);
+  setPaused(true);
+ }
  useEffect(()=>{try {const p=JSON.parse(localStorage.getItem('artikel-progress')||'null');if(p&&Array.isArray(p.completed))setProgress({...initial,...p,curriculumVersion:4,completed:p.curriculumVersion===4?p.completed:[2,3].includes(p.curriculumVersion)?Array.from(new Set(p.completed.filter((id:number)=>p.curriculumVersion!==2||id!==1).map((id:number)=>id===14?2:id))):[]});const saved=Number(localStorage.getItem('artikel-sector')||0);if(saved>=0&&saved<6)setLevel(saved);}catch{} setReady(true);},[]);
  useEffect(()=>{if(ready){try{localStorage.setItem('artikel-progress',JSON.stringify(progress));localStorage.setItem('artikel-sector',String(level));}catch{}}},[progress,level,ready]);
- function start(ep:number,demo=true){const nextWords=demo?demoWords:lessonGameVocabulary[level][ep-1];if(!nextWords.length)return;setActiveLesson(demo?null:{level,episode:ep});setWordResults(nextWords.map(()=>null));if(demo)setLevel(0);setEpisode(demo?1:ep);setRound(0);setScore(0);setLane(0);setSpeed(1);travel.current=0;starDistance.current=0;checked.current=false;setFlightPosition(0);setFeedback('');setAnswerResult(null);setFinished(false);setPaused(false);setPlaying(true);setModal(null);}
+ function start(ep:number,demo=true,askJoystick=true){const showJoystickPrompt=askJoystick&&!window.matchMedia('(max-width: 767px), (max-height: 500px) and (pointer: coarse)').matches;const nextWords=demo?demoWords:lessonGameVocabulary[level][ep-1];if(!nextWords.length)return;setActiveLesson(demo?null:{level,episode:ep});setWordResults(nextWords.map(()=>null));if(demo)setLevel(0);setEpisode(demo?1:ep);setRound(0);setScore(0);setLane(0);setSpeed(1);travel.current=0;starDistance.current=0;checked.current=false;setFlightPosition(0);setFeedback('');setAnswerResult(null);setFinished(false);setPaused(showJoystickPrompt);setPlaying(true);setModal(showJoystickPrompt?'joystick':null);}
  function resetFlight() {
-  start(episode, activeLesson === null);
+  start(episode, activeLesson === null, false);
   if (wordList.current) {
    wordList.current.scrollTop = 0;
   }
@@ -102,6 +136,8 @@ export default function Home(){
   return()=>cancelAnimationFrame(frame);
  },[playing,paused,finished,speed,lane,round,score,sound,activeLesson,words]);
  useEffect(()=>{function key(e:KeyboardEvent){
+  if(modal==='joystick'){if(e.key==='Escape'){e.preventDefault();setModal(null);setPaused(false);}return;}
+  if(pairingOpen){if(e.key==='Escape')setPairingOpen(false);return;}
   if(modal==='menu'){
    if(e.key==='Tab'){e.preventDefault();setMenuIndex(index=>(index+(e.shiftKey?-1:1)+menuItems.length)%menuItems.length);return;}
    if(['ArrowDown','ArrowUp','Enter','Escape'].includes(e.key)){e.preventDefault();if(e.key==='Escape')closeMenu();else if(e.key==='Enter')menuItems[menuIndex].action();else setMenuIndex(index=>(index+(e.key==='ArrowDown'?1:-1)+menuItems.length)%menuItems.length);}return;
@@ -142,6 +178,15 @@ export default function Home(){
       </button>
      </div>
     </div>
+    <div className="controller-link-panel">
+     <button className="secondary connect-phone" onClick={openPhonePairing}>
+      <Smartphone size={16}/> {phone.status === 'connected' ? 'PAIR NEW PHONE' : 'CONNECT PHONE'}
+     </button>
+     {phone.status !== 'idle' && <p className={`phone-link-status ${phone.status}`} role="status">
+      {phone.status === 'connected' ? 'Phone connected' : phone.status === 'disconnected' ? 'Phone disconnected · flight paused' : phone.status === 'error' ? 'Phone connection needs attention' : 'Waiting for phone'}
+     </p>}
+     {phone.pairUrl && <button className="phone-disconnect" onClick={disconnectPhone}>Disconnect controller</button>}
+    </div>
     <div className="telemetry-score"><span>1P SCORE</span><div key={score} className={`score-display ${score>0?'score-updated':''}`} aria-live="polite"><ArcadeScore value={score}/></div><div className="high-score"><span>HI-SCORE</span><ArcadeScore value={Math.max(progress.best,score)}/></div></div>
     <div className="telemetry-stats"><div><span>FLIGHT SPEED</span><strong className="speed-readout">{speed.toFixed(2)}×</strong></div><div><span>CORRECT</span><strong>{score/100} <small>/ {finished?words.length:round+(answerResult?1:0)}</small></strong></div></div>
     <div className="telemetry-progress"><div><span>FLIGHT PROGRESS</span><strong>{finished?words.length:round} / {words.length}</strong></div><div className="telemetry-track"><i style={{width:`${(finished?words.length:round)/words.length*100}%`}}/></div><small>{activeLesson?`${levels[activeLesson.level]} · ${activeSource==='sample'?'SAMPLE':'LESSON'} VOCABULARY`:'A1 · DEMO VOCABULARY'}</small></div>
@@ -149,7 +194,7 @@ export default function Home(){
     <div className="telemetry-legend"><span><i className="correct-dot"/> CORRECT ANSWER</span><span><i className="wrong-dot"/> WRONG ANSWER</span></div>
    </aside>
    <div className="flight-screen"><div ref={flightStage} className={`flight-stage starfield ${paused||finished?'motion-paused':''}`} data-result={answerResult??undefined} style={{backgroundPosition:[1, .45, 1.6, .7, 2, 1.2].map(rate=>`0 ${starDistance.current*rate}px`).join(',')}}>
-   <div className="game-hud"><button className="flight-home" onClick={returnToMain} aria-label="Return to main page"><House size={14}/><span>MAIN PAGE</span></button><button className="flight-hud-menu" onClick={openMenu} aria-haspopup="dialog">☰ MENU</button><span>WORD {round+1} / {words.length}</span><span className="hud-sector">{activeLesson?`${levels[activeLesson.level]} · ${activeSource==='sample'?'SAMPLE':`LESSON ${activeLesson.episode}`}`:'A1 · DEMO'}</span><button className="flight-reset" aria-label="Reset current flight" title="Reset current flight" onClick={resetFlight}><RotateCcw size={15}/></button></div>
+   <div className="game-hud"><button className="flight-phone" onClick={openPhonePairing} aria-label="Connect phone controller" title="Connect phone controller"><Smartphone size={16}/></button><button className="flight-home" onClick={returnToMain} aria-label="Return to main page"><House size={14}/><span>MAIN PAGE</span></button><button className="flight-hud-menu" onClick={openMenu} aria-haspopup="dialog">☰ MENU</button><span>WORD {round+1} / {words.length}</span><span className="hud-sector">{activeLesson?`${levels[activeLesson.level]} · ${activeSource==='sample'?'SAMPLE':`LESSON ${activeLesson.episode}`}`:'A1 · DEMO'}</span><button className="flight-reset" aria-label="Reset current flight" title="Reset current flight" onClick={resetFlight}><RotateCcw size={15}/></button></div>
    <div className={`word-planet traveling-planet ${feedback?'planet-checked':''}`} style={{top:`${10+flightPosition*86}%`,opacity:flightPosition>.86?(1-flightPosition)/.14:1}}><span style={{fontSize:words[round%words.length].word.length>18?9:words[round%words.length].word.length>12?12:undefined}}>{words[round%words.length].word}</span><small>{words[round%words.length].meaning}</small></div>
    <div ref={shuttleElement} className="centered-shuttle"><Ship/></div>
    <div className="article-selector" role="group" aria-label="Selected article — use left and right arrows">{articles.map((article,i)=><span key={article} className={i===lane?'selected':''} aria-current={i===lane?'true':undefined}>{article[0].toUpperCase()+article.slice(1)}</span>)}</div>
@@ -177,6 +222,14 @@ export default function Home(){
    <footer className="project-footer"><div><span className="footer-label">ARTIKEL ARCADE</span><p>An open-source project for learning German through arcade games.</p></div><div><span className="footer-label">AUTHORS</span><ul aria-label="Project authors">{authors.map(author=><li key={author}>{author}</li>)}</ul></div><div><span className="footer-label">CREATOR WEBSITE</span><a href="https://rezarezaeipour.com" target="_blank" rel="noopener noreferrer">rezarezaeipour.com <ArrowUpRight size={14}/></a></div></footer>
   </div>}
   </main>
-  {modal&&<div className="modal-backdrop" onClick={()=>modal==='menu'?closeMenu():setModal(null)}><section className={`modal ${modal==='all'?'wide':''}`} role="dialog" aria-modal="true" aria-label={modal==='menu'?'Arcade menu':modal==='how'?'Flight manual':modal==='settings'?'Settings':'Episode selection'} onClick={e=>e.stopPropagation()}><button className="close-modal icon-btn" aria-label="Close dialog" onClick={()=>modal==='menu'?closeMenu():setModal(null)}><X size={20}/></button><div className="eyebrow">ARTIKEL ARCADE / FLIGHT DECK</div>{modal==='menu'?<><div className="arcade-menu-logo">ARTIKEL<br/><span>ARCADE</span></div><p className="arcade-menu-caption">{playing?'FLIGHT PAUSED · SELECT AN OPTION':'SELECT YOUR NEXT ADVENTURE'}</p><nav className="arcade-menu-options" aria-label="Game pages">{menuItems.map((item,index)=>item.href?<a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" ref={element=>{menuButtons.current[index]=element;}} className={index===menuIndex?'selected':''} onFocus={()=>setMenuIndex(index)}><span className="menu-cursor">▶</span>{item.label}<small>↗</small></a>:<button key={item.label} ref={element=>{menuButtons.current[index]=element;}} className={index===menuIndex?'selected':''} onFocus={()=>setMenuIndex(index)} onClick={item.action}><span className="menu-cursor">▶</span>{item.label}<small>{String(index+1).padStart(2,'0')}</small></button>)}</nav><p className="arcade-menu-hint">↑ ↓ SELECT · ENTER CONFIRM · ESC CLOSE</p></>:modal==='how'?<><h2>Your flight manual.</h2><p>Word planets fly toward your shuttle. Select the correct article before each planet passes you; your answer is checked automatically.</p><div className="instruction"><kbd>←</kbd><kbd>→</kbd><span>Select Der, Das, or Die beneath your shuttle.</span></div><div className="instruction"><kbd>↑</kbd><span>Speed up your flight (up to 3×).</span></div><div className="instruction"><kbd>↓</kbd><span>Slow down your flight (down to 0.5×).</span></div><p className="muted">Press Esc to open the game menu, or use the Pause button to pause. The separate demo includes eight sample A1 words; these are not book lesson content. More episode vocabulary and Leitner scheduling come next.</p><button className="primary" onClick={()=>start(1)}>LET'S FLY <ArrowRight size={16}/></button></>:modal==='settings'?<><h2>Cockpit settings.</h2><div className="setting-row"><span>Arcade sound effects</span><button className="secondary" onClick={()=>setSound(!sound)}>{sound?'ON':'OFF'}</button></div><p>Progress is stored in this browser with localStorage. No account required.</p><button className="danger" onClick={()=>setModal('reset')}><RotateCcw size={15}/> Reset flight progress</button></>:modal==='reset'?<><h2>A fresh launch?</h2><p>This clears your completed episodes and scores on this device.</p><button className="danger" onClick={()=>{setProgress(initial);setModal(null)}}>RESET MY PROGRESS</button></>:modal==='all'?<><h2>{levels[level]} · Episode directory</h2><p>Each episode matches one Starten Wir! lesson. Send its word list to populate it; word counts can vary by lesson.</p><div className="all-grid">{Array.from({length:LESSONS_PER_LEVEL},(_,i)=><button key={i} onClick={()=>{setEpisode(i+1);setModal('episode')}} className={curriculum[levels[level]][i].words.length?'available':''}>{String(i+1).padStart(2,'0')} {curriculum[levels[level]][i].words.length?<Play size={11}/>:<LockKeyhole size={11}/>}</button>)}</div></>:<><div className="episode-modal-icon"><Ship small/></div><h2>{levels[level]} · Episode {String(episode).padStart(2,'0')}</h2><p>Starten Wir! · Lesson {String(episode).padStart(2,'0')}. {selectedLesson.source==='user'?'Vocabulary from your supplied lesson photos. The article game uses nouns with printed articles; browse the full list, including phrases and verbs, in Word collection.':selectedLesson.words.length?'Illustrative sample vocabulary for testing. These words are not from the book.':'This episode is waiting for your lesson vocabulary.'}</p><div className="mission-summary"><span>{selectedLesson.words.length?`${selectedLesson.words.length} TOTAL · ${selectedNouns.length} ARTICLE WORDS`:'WORD LIST PENDING'}</span><span>DER / DAS / DIE</span><span>ARROW CONTROLS</span></div><button className="primary" onClick={()=>selectedNouns.length?start(episode,false):start(1)}>{selectedNouns.length?(selectedLesson.source==='sample'?'LAUNCH SAMPLE LESSON':'LAUNCH LESSON'):'LAUNCH A1 DEMO'} <ArrowRight size={16}/></button></>}</section></div>}
+  {playing && pairingOpen && <PhonePairing
+    status={phone.status}
+    error={phone.error}
+    pairUrl={phone.pairUrl}
+    onRetry={() => { void phone.connect(); }}
+    onClose={() => setPairingOpen(false)}
+  />}
+  {modal==='joystick'&&<JoystickPrompt connected={phone.status==='connected'} onConnect={openPhonePairing} onContinue={()=>{setModal(null);setPaused(false);}}/>}
+  {modal&&modal!=='joystick'&&<div className="modal-backdrop" onClick={()=>modal==='menu'?closeMenu():setModal(null)}><section className={`modal ${modal==='all'?'wide':''}`} role="dialog" aria-modal="true" aria-label={modal==='menu'?'Arcade menu':modal==='how'?'Flight manual':modal==='settings'?'Settings':'Episode selection'} onClick={e=>e.stopPropagation()}><button className="close-modal icon-btn" aria-label="Close dialog" onClick={()=>modal==='menu'?closeMenu():setModal(null)}><X size={20}/></button><div className="eyebrow">ARTIKEL ARCADE / FLIGHT DECK</div>{modal==='menu'?<><div className="arcade-menu-logo">ARTIKEL<br/><span>ARCADE</span></div><p className="arcade-menu-caption">{playing?'FLIGHT PAUSED · SELECT AN OPTION':'SELECT YOUR NEXT ADVENTURE'}</p><nav className="arcade-menu-options" aria-label="Game pages">{menuItems.map((item,index)=>item.href?<a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" ref={element=>{menuButtons.current[index]=element;}} className={index===menuIndex?'selected':''} onFocus={()=>setMenuIndex(index)}><span className="menu-cursor">▶</span>{item.label}<small>↗</small></a>:<button key={item.label} ref={element=>{menuButtons.current[index]=element;}} className={index===menuIndex?'selected':''} onFocus={()=>setMenuIndex(index)} onClick={item.action}><span className="menu-cursor">▶</span>{item.label}<small>{String(index+1).padStart(2,'0')}</small></button>)}</nav><p className="arcade-menu-hint">↑ ↓ SELECT · ENTER CONFIRM · ESC CLOSE</p></>:modal==='how'?<><h2>Your flight manual.</h2><p>Word planets fly toward your shuttle. Select the correct article before each planet passes you; your answer is checked automatically.</p><div className="instruction"><kbd>←</kbd><kbd>→</kbd><span>Select Der, Das, or Die beneath your shuttle.</span></div><div className="instruction"><kbd>↑</kbd><span>Speed up your flight (up to 3×).</span></div><div className="instruction"><kbd>↓</kbd><span>Slow down your flight (down to 0.5×).</span></div><p className="muted">Press Esc to open the game menu, or use the Pause button to pause. The separate demo includes eight sample A1 words; these are not book lesson content. More episode vocabulary and Leitner scheduling come next.</p><button className="primary" onClick={()=>start(1)}>LET'S FLY <ArrowRight size={16}/></button></>:modal==='settings'?<><h2>Cockpit settings.</h2><div className="setting-row"><span>Arcade sound effects</span><button className="secondary" onClick={()=>setSound(!sound)}>{sound?'ON':'OFF'}</button></div><p>Progress is stored in this browser with localStorage. No account required.</p><button className="danger" onClick={()=>setModal('reset')}><RotateCcw size={15}/> Reset flight progress</button></>:modal==='reset'?<><h2>A fresh launch?</h2><p>This clears your completed episodes and scores on this device.</p><button className="danger" onClick={()=>{setProgress(initial);setModal(null)}}>RESET MY PROGRESS</button></>:modal==='all'?<><h2>{levels[level]} · Episode directory</h2><p>Each episode matches one Starten Wir! lesson. Send its word list to populate it; word counts can vary by lesson.</p><div className="all-grid">{Array.from({length:LESSONS_PER_LEVEL},(_,i)=><button key={i} onClick={()=>{setEpisode(i+1);setModal('episode')}} className={curriculum[levels[level]][i].words.length?'available':''}>{String(i+1).padStart(2,'0')} {curriculum[levels[level]][i].words.length?<Play size={11}/>:<LockKeyhole size={11}/>}</button>)}</div></>:<><div className="episode-modal-icon"><Ship small/></div><h2>{levels[level]} · Episode {String(episode).padStart(2,'0')}</h2><p>Starten Wir! · Lesson {String(episode).padStart(2,'0')}. {selectedLesson.source==='user'?'Vocabulary from your supplied lesson photos. The article game uses nouns with printed articles; browse the full list, including phrases and verbs, in Word collection.':selectedLesson.words.length?'Illustrative sample vocabulary for testing. These words are not from the book.':'This episode is waiting for your lesson vocabulary.'}</p><div className="mission-summary"><span>{selectedLesson.words.length?`${selectedLesson.words.length} TOTAL · ${selectedNouns.length} ARTICLE WORDS`:'WORD LIST PENDING'}</span><span>DER / DAS / DIE</span><span>ARROW CONTROLS</span></div><button className="primary" onClick={()=>selectedNouns.length?start(episode,false):start(1)}>{selectedNouns.length?(selectedLesson.source==='sample'?'LAUNCH SAMPLE LESSON':'LAUNCH LESSON'):'LAUNCH A1 DEMO'} <ArrowRight size={16}/></button></>}</section></div>}
  </div>
 }

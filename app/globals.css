@@ -449,3 +449,61 @@ kbd{background:#1c3154;border-color:#45638c;color:#d4e6ff;box-shadow:0 2px 0 #05
     color: var(--yellow);
   }
 }
+
+/* Phone pairing stays with the game controls. */
+.controller-link-panel{padding-top:14px}
+.connect-phone{width:100%;justify-content:center;gap:8px;font-size:11px;padding:12px 8px;border-color:var(--blue)}
+.phone-link-status{font:10px/1.7 var(--mono);color:#a9c6ef;margin:10px 0 0}
+.phone-link-status.connected{color:#87e5a0}
+.phone-link-status.disconnected,.phone-link-status.error{color:var(--yellow)}
+.phone-disconnect{background:transparent;color:#adc5e8;text-decoration:underline;text-underline-offset:3px;font-size:11px;padding:8px 0 0}
+.flight-phone{display:grid;place-items:center;flex-shrink:0;padding:8px;background:#172c50;border:1px solid var(--blue);color:var(--blue)}
+.flight-screen .game-hud{flex-wrap:wrap}
+.phone-pairing{width:480px;text-align:center}
+.phone-pairing>svg{color:var(--yellow)}
+.phone-pairing h2{font-size:23px}
+.pairing-qr{background:white;padding:5px;width:fit-content;max-width:100%;margin:20px auto;border:4px solid var(--yellow)}
+.pairing-qr svg{display:block;max-width:100%;height:auto}
+.phone-pairing .pairing-status{color:var(--blue);font:11px/1.8 var(--mono)}
+.phone-pairing .pairing-expiry{font-size:10px}
+.pairing-link{display:flex;gap:6px;margin-top:15px}
+.pairing-link input{min-width:0;flex:1;background:#0b1630;border:1px solid #3d5a86;color:#c2d9fb;font-size:11px;padding:10px}
+.phone-pairing .pairing-copy-message{font-size:10px;min-height:16px;margin:7px 0}
+.pairing-open-link{display:block;color:var(--blue);font-size:12px;text-decoration:underline;margin:8px 0 20px}
+.phone-pairing .pairing-error{color:#ffb6a5;background:#3d252d;padding:14px;text-align:left}
+
+/* The phone controller uses the whole viewport as two rows of large pads. */
+main.phone-controller{height:100svh;min-height:0;overflow:hidden;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:6px;padding:max(6px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));background:#070e21;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+.controller-info{grid-column:2;grid-row:1;min-height:0;overflow:auto;background:#142647;padding:clamp(14px,3vw,35px);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px}
+.controller-info>svg{color:var(--yellow);flex-shrink:0}
+.controller-info h1{font:700 clamp(14px,3.8vw,30px)/1.25 var(--mono);letter-spacing:0;margin:0;color:var(--blue)}
+.controller-info h1 span{color:var(--yellow)}
+.controller-info p{font-size:clamp(10px,2.5vw,14px);line-height:1.5;color:#b3c9e9;margin:0}
+.controller-info .controller-state{font-family:var(--mono);color:var(--yellow)}
+.controller-info .controller-state.connected{color:#87e5a0}
+.controller-info a{display:flex;align-items:center;gap:6px;color:var(--blue);font-size:11px;text-decoration:underline;margin-top:4px}
+.controller-pad{min-width:0;min-height:0;border:3px solid #537fba;border-radius:3px;background:#244c89;color:#e4f0ff;display:grid;place-items:center;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:background .08s,transform .08s;box-shadow:inset 0 -7px 0 #102650}
+.controller-pad svg{width:clamp(48px,13vw,150px);height:clamp(48px,13vw,150px);pointer-events:none}
+.pad-up{grid-column:3;grid-row:1}
+.pad-der{grid-column:1;grid-row:2}
+.pad-down{grid-column:1;grid-row:1;}
+.pad-das{grid-column:2;grid-row:2}
+.controller-pad.selected{background:#ffda57;border-color:#ffec9b;color:#10234b;box-shadow:inset 0 -7px 0 #b1871d}
+.pad-die{grid-column:3;grid-row:2}
+.controller-pad span{font:700 clamp(26px,7vw,80px)/1 var(--mono)}
+.controller-pad.pressed{background:#90c6ff;color:#0c1e42;box-shadow:inset 0 5px 0 #537fba;transform:translateY(2px)}
+.controller-pad.selected.pressed{background:#fff09b;box-shadow:inset 0 5px 0 #c49a28}
+.controller-pad:disabled{opacity:.35;cursor:default}
+@media(max-height:450px){.controller-info{gap:5px;padding:12px}.controller-info>svg{display:none}.controller-info h1{font-size:16px}.controller-info h1 br{display:none}.controller-info h1 span{margin-left:8px}.controller-info p{font-size:10px}}
+@media(max-width:700px){.controller-link-panel{grid-column:1/-1}.phone-pairing{padding:28px 18px}.phone-pairing h2{font-size:19px}.flight-screen .game-hud{gap:6px}}
+@media(prefers-reduced-motion:reduce){.controller-pad{transition:none}}
+
+.modal.joystick-prompt{width:min(680px,calc(100vw - 28px));max-height:calc(100svh - 28px);overflow:auto;padding:28px;text-align:center}
+.joystick-prompt h2{color:var(--yellow);font-size:clamp(19px,4vw,27px);margin:0 0 18px}
+.joystick-illustration{display:block;width:100%;height:auto;max-height:36svh;object-fit:contain;image-rendering:pixelated;border:2px solid #365fa2;background:#070e21}
+.joystick-prompt p{max-width:520px;margin:18px auto;line-height:1.6}
+.joystick-prompt-actions{display:flex;align-items:stretch;justify-content:center;gap:12px}
+.joystick-prompt .joystick-prompt-actions button{display:flex;align-items:center;justify-content:center;flex:1;min-width:0;height:60px;margin:0;padding:12px 16px;font:700 14px/1.4 var(--mono);letter-spacing:.3px;gap:10px}
+.joystick-prompt-actions .secondary{box-shadow:0 4px 0 #0b1830}
+.joystick-prompt-actions button svg{flex-shrink:0}
+@media(max-width:520px){.modal.joystick-prompt{padding:22px 16px}.joystick-prompt-actions{flex-direction:column}.joystick-prompt-actions button{width:100%}}

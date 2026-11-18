@@ -1,3 +1,5 @@
 import type { NextConfig } from 'next';
-const config: NextConfig = { output: 'export' };
+
+// API routes issue short-lived pairing permissions at request time.
+const config: NextConfig = {};
 export default config;
