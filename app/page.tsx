@@ -69,6 +69,13 @@ export default function Home(){
  useEffect(()=>{try {const p=JSON.parse(localStorage.getItem('artikel-progress')||'null');if(p&&Array.isArray(p.completed))setProgress({...initial,...p,curriculumVersion:4,completed:p.curriculumVersion===4?p.completed:[2,3].includes(p.curriculumVersion)?Array.from(new Set(p.completed.filter((id:number)=>p.curriculumVersion!==2||id!==1).map((id:number)=>id===14?2:id))):[]});const saved=Number(localStorage.getItem('artikel-sector')||0);if(saved>=0&&saved<6)setLevel(saved);}catch{} setReady(true);},[]);
  useEffect(()=>{if(ready){try{localStorage.setItem('artikel-progress',JSON.stringify(progress));localStorage.setItem('artikel-sector',String(level));}catch{}}},[progress,level,ready]);
  function start(ep:number,demo=true){const nextWords=demo?demoWords:lessonGameVocabulary[level][ep-1];if(!nextWords.length)return;setActiveLesson(demo?null:{level,episode:ep});setWordResults(nextWords.map(()=>null));if(demo)setLevel(0);setEpisode(demo?1:ep);setRound(0);setScore(0);setLane(0);setSpeed(1);travel.current=0;starDistance.current=0;checked.current=false;setFlightPosition(0);setFeedback('');setAnswerResult(null);setFinished(false);setPaused(false);setPlaying(true);setModal(null);}
+ function resetFlight() {
+  start(episode, activeLesson === null);
+  if (wordList.current) {
+   wordList.current.scrollTop = 0;
+  }
+ }
+
  function answer(){if(feedback||paused||finished)return;const correct=articles[lane]===words[round%words.length].article; setAnswerResult(correct?'correct':'wrong');setWordResults(results=>results.map((result,index)=>index===round?(correct?'correct':'wrong'):result)); const next=score+(correct?100:0);setScore(next);setFeedback(correct?'PERFECT ORBIT! +100':`It's ${words[round%words.length].article} ${words[round%words.length].word}`);if(sound){try{const ctx=new AudioContext();const o=ctx.createOscillator();const g=ctx.createGain();o.type='square';o.frequency.value=correct?660:160;g.gain.value=.035;o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.12);}catch{}}}
  // Distance, rather than a submit key, determines when a planet is checked.
  useEffect(()=>{
@@ -117,7 +124,24 @@ export default function Home(){
   {!playing&&<button className="arcade-menu-trigger" onClick={openMenu} aria-haspopup="dialog">☰ <span>MENU</span></button>}
   {playing?<div className="game-content"><div className="flight-layout">
    <aside className="flight-telemetry" aria-label="Flight statistics">
-    <div className="telemetry-title"><span className="eyebrow">{activeLesson?`${levels[activeLesson.level]} · LESSON ${activeLesson.episode}`:'A1 · FLIGHT DEMO'}</span><h1>Find your article.</h1><span className="telemetry-status"><i/>{finished?'MISSION COMPLETE':paused?'HOLDING ORBIT':'IN FLIGHT'}</span><div className="cockpit-actions"><button className="secondary cockpit-pause" disabled={finished} onClick={()=>setPaused(p=>!p)}>{paused?<Play size={14}/>:<Pause size={14}/>} {paused?'RESUME':'PAUSE'}</button><button className="secondary cockpit-menu" onClick={openMenu} aria-haspopup="dialog">☰ MENU</button></div></div>
+    <div className="telemetry-title">
+     <span className="eyebrow">
+      {activeLesson ? `${levels[activeLesson.level]} · LESSON ${activeLesson.episode}` : 'A1 · FLIGHT DEMO'}
+     </span>
+     <h1>Find your article.</h1>
+     <span className="telemetry-status">
+      <i/>{finished ? 'MISSION COMPLETE' : paused ? 'HOLDING ORBIT' : 'IN FLIGHT'}
+     </span>
+     <div className="cockpit-actions">
+      <button className="secondary cockpit-pause" disabled={finished} onClick={()=>setPaused(p=>!p)}>
+       {paused ? <Play size={14}/> : <Pause size={14}/>} {paused ? 'RESUME' : 'PAUSE'}
+      </button>
+      <button className="secondary cockpit-menu" onClick={openMenu} aria-haspopup="dialog">☰ MENU</button>
+      <button className="secondary cockpit-reset" onClick={resetFlight}>
+       <RotateCcw size={14}/> RESET FLIGHT
+      </button>
+     </div>
+    </div>
     <div className="telemetry-score"><span>1P SCORE</span><div key={score} className={`score-display ${score>0?'score-updated':''}`} aria-live="polite"><ArcadeScore value={score}/></div><div className="high-score"><span>HI-SCORE</span><ArcadeScore value={Math.max(progress.best,score)}/></div></div>
     <div className="telemetry-stats"><div><span>FLIGHT SPEED</span><strong className="speed-readout">{speed.toFixed(2)}×</strong></div><div><span>CORRECT</span><strong>{score/100} <small>/ {finished?words.length:round+(answerResult?1:0)}</small></strong></div></div>
     <div className="telemetry-progress"><div><span>FLIGHT PROGRESS</span><strong>{finished?words.length:round} / {words.length}</strong></div><div className="telemetry-track"><i style={{width:`${(finished?words.length:round)/words.length*100}%`}}/></div><small>{activeLesson?`${levels[activeLesson.level]} · ${activeSource==='sample'?'SAMPLE':'LESSON'} VOCABULARY`:'A1 · DEMO VOCABULARY'}</small></div>
@@ -125,7 +149,7 @@ export default function Home(){
     <div className="telemetry-legend"><span><i className="correct-dot"/> CORRECT ANSWER</span><span><i className="wrong-dot"/> WRONG ANSWER</span></div>
    </aside>
    <div className="flight-screen"><div ref={flightStage} className={`flight-stage starfield ${paused||finished?'motion-paused':''}`} data-result={answerResult??undefined} style={{backgroundPosition:[1, .45, 1.6, .7, 2, 1.2].map(rate=>`0 ${starDistance.current*rate}px`).join(',')}}>
-   <div className="game-hud"><button className="flight-home" onClick={returnToMain} aria-label="Return to main page"><House size={14}/><span>MAIN PAGE</span></button><button className="flight-hud-menu" onClick={openMenu} aria-haspopup="dialog">☰ MENU</button><span>WORD {round+1} / {words.length}</span><span className="hud-sector">{activeLesson?`${levels[activeLesson.level]} · ${activeSource==='sample'?'SAMPLE':`LESSON ${activeLesson.episode}`}`:'A1 · DEMO'}</span></div>
+   <div className="game-hud"><button className="flight-home" onClick={returnToMain} aria-label="Return to main page"><House size={14}/><span>MAIN PAGE</span></button><button className="flight-hud-menu" onClick={openMenu} aria-haspopup="dialog">☰ MENU</button><span>WORD {round+1} / {words.length}</span><span className="hud-sector">{activeLesson?`${levels[activeLesson.level]} · ${activeSource==='sample'?'SAMPLE':`LESSON ${activeLesson.episode}`}`:'A1 · DEMO'}</span><button className="flight-reset" aria-label="Reset current flight" title="Reset current flight" onClick={resetFlight}><RotateCcw size={15}/></button></div>
    <div className={`word-planet traveling-planet ${feedback?'planet-checked':''}`} style={{top:`${10+flightPosition*86}%`,opacity:flightPosition>.86?(1-flightPosition)/.14:1}}><span style={{fontSize:words[round%words.length].word.length>18?9:words[round%words.length].word.length>12?12:undefined}}>{words[round%words.length].word}</span><small>{words[round%words.length].meaning}</small></div>
    <div ref={shuttleElement} className="centered-shuttle"><Ship/></div>
    <div className="article-selector" role="group" aria-label="Selected article — use left and right arrows">{articles.map((article,i)=><span key={article} className={i===lane?'selected':''} aria-current={i===lane?'true':undefined}>{article[0].toUpperCase()+article.slice(1)}</span>)}</div>

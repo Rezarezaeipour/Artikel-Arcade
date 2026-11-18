@@ -350,3 +350,102 @@ kbd{background:#1c3154;border-color:#45638c;color:#d4e6ff;box-shadow:0 2px 0 #05
 .project-footer a:hover{color:var(--yellow)}
 @media(max-width:700px){.project-footer{grid-template-columns:1fr 1fr;gap:24px;font-size:11px}.project-footer>div:first-child{grid-column:1/-1}}
 @media(max-width:420px){.project-footer{grid-template-columns:1fr;gap:23px}}
+
+/* Readable instrument labels and a reset action for the current flight. */
+.telemetry-title .eyebrow,
+.telemetry-status,
+.telemetry-stats div > span,
+.telemetry-progress > div > span,
+.telemetry-progress > small,
+.telemetry-controls h3,
+.telemetry-legend {
+  font-size: 11px;
+  line-height: 1.7;
+  letter-spacing: .5px;
+  color: #b4c9eb;
+}
+.telemetry-stats div > span {
+  display: block;
+}
+.telemetry-stats strong {
+  font-size: 25px;
+}
+.telemetry-stats strong small,
+.telemetry-progress strong {
+  font-size: 14px;
+}
+.telemetry-progress > div:first-child {
+  flex-wrap: wrap;
+}
+.telemetry-controls > div {
+  font-size: 13px;
+}
+.high-score > span {
+  font-size: 12px;
+}
+.word-list-heading .eyebrow,
+.word-list-heading h2 > span,
+.radar-number {
+  font-size: 11px;
+}
+.word-list-heading p,
+.flight-word-list .word-list-note,
+.radar-word small {
+  font-size: 12px;
+  color: #a8bedf;
+}
+.radar-noun {
+  font-size: 14px;
+}
+.flight-screen .game-hud {
+  font-size: 11px;
+}
+.flight-screen .feedback {
+  font-size: 10px;
+}
+.cockpit-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.cockpit-actions .secondary {
+  justify-content: center;
+  padding: 11px 7px;
+  gap: 6px;
+  font-size: 11px;
+}
+.cockpit-reset {
+  grid-column: 1 / -1;
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+.flight-reset {
+  display: none;
+}
+@media (min-width: 701px) and (max-width: 1000px) {
+  .telemetry-stats strong {
+    font-size: 20px;
+  }
+}
+@media (max-width: 700px) {
+  .telemetry-stats,
+  .telemetry-progress {
+    grid-column: 1 / -1;
+  }
+  .telemetry-title .cockpit-actions {
+    display: flex;
+    flex-direction: column;
+  }
+  .flight-screen .game-hud {
+    font-size: 10px;
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+  .flight-reset {
+    display: inline-grid;
+    place-items: center;
+    padding: 7px;
+    background: #172c50;
+    border: 1px solid var(--yellow);
+    color: var(--yellow);
+  }
+}
